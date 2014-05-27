@@ -1,0 +1,122 @@
+<html>
+<head>
+<script src="/socket.io/socket.io.js"></script>
+
+<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+<link href="/css/bootstrap-responsive.css" rel="stylesheet">
+
+<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+
+<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+
+<link href='http://fonts.googleapis.com/css?family=Roboto+Condensed' rel='stylesheet' type='text/css'>
+
+<link rel="shortcut icon" href="img/icon.png">
+
+<link href="css/style.css" rel="stylesheet">
+
+<link href='http://fonts.googleapis.com/css?family=Roboto+Condensed:300' rel='stylesheet' type='text/css'>
+
+<head>
+<title> 
+ScreenIt
+</title>
+</head>
+<script>
+
+var socket;
+var id;
+var picturesCount;
+var qrW, qrH;
+$(document).ready(function() {
+	$('#slideshow').hide();
+	$('#thankyou').hide();
+	picturesCount = 0;
+	
+	$('#slideshow').carousel();
+	connectToServer();
+});
+function connectToServer() {
+	socket = io.connect('http://192.168.1.3');
+	socket.on('requestClientType', function() {
+		socket.emit('clientType', {type : 'browser'});
+	});
+	
+	socket.on('idGeneratedEvent', function (data) {
+		id = data.id;
+		var documentW = $(document).width();
+		var documentH = $(document).height() - parseInt($('#header').css("height"));
+		qrW = parseInt(Math.min(documentW / 2, documentH /2));
+		qrH = qrW;
+
+		str = 'http://api.qrserver.com/v1/create-qr-code/?size='+(qrW)+'x'+(qrH)+'&data='+(id);
+		console.log("data is " + id);
+		$('#ID').attr("src", str);
+		$('#appname').append(id);
+		$('#ID').load(function() {
+			$(this).center();
+		});
+		socket.emit('browserWindowSize', {width: documentW, height: documentH}); 
+		
+	});
+	socket.on('imagePush', function(data) {
+		$('#ID').hide();
+		
+		var imgP = data.img;
+		console.log("before: "+imgP);
+		imgP = imgP.replace('\\', '/')
+		addImg(imgP);
+		console.log("after: " + imgP);
+	});	
+	socket.on('goToSlideNum', function(data) {
+		goToSlideNum(data.slideNum);
+	});
+	socket.on('deviceDisconnected', function() {
+		$('#slideshow').html("<h2>Thank you for using ScreenIt!</h2>");;
+	});
+}
+jQuery.fn.center = function () {
+    this.css("position","absolute");
+    this.css("margin-top", Math.max(0, (($(document).height() - $(this).outerHeight()) / 2) + 
+                                                $(document).scrollTop()) + "px");
+    this.css("margin-left", Math.max(0, (($(document).width() - $(this).outerWidth()) / 2) + 
+                                                $(document).scrollLeft()) + "px");
+    return this;
+}
+function goToSlideNum(num){
+	$('#slideshow').carousel(num);
+}
+function addImg(src) {
+	if(picturesCount == 0) {
+		$('#slideshow').show();
+		$('#slideshow').css("top", $('#header').css("height"));
+		$('.carousel-inner').append('<div class="item active"><img src="'+src+'"/></div>');
+	}
+	else $('.carousel-inner').append('<div class="item"><img src="'+src+'"/></div>');
+	picturesCount++;
+	return picturesCount - 1;
+}
+</script>
+</head>
+<body>
+<br>
+<div class="HeaderBar" id="header">
+	<div class="AppName" id="appname">
+		<h1>ScreenIt</h1>
+		<h2>Show your photos and documents on any screen.</h2>
+	</div>
+</div>
+<img id = "ID" alt="aaa"></img>
+<center><div id="slideshow" class="carousel slide">
+    <div class="carousel-inner">
+    </div><!-- .carousel-inner -->
+    <a class="carousel-control left" href="#slideshow" data-slide="prev">&lsaquo;</a>
+    <a class="carousel-control right" href="#slideshow" data-slide="next">&rsaquo;</a>
+</div><!-- .carousel -->
+
+</center>
+
+
+</body>
+</html>
