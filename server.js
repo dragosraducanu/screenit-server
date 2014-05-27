@@ -220,6 +220,8 @@ function pushImageToBrowser(data, socket) {
 
 
 function handleClientConnected(data, socket) {
+	console.log("handling client");
+	console.log(data);
 	if(data.type == ClientType.BROWSER) 
 	{
 		socket.clientType = ClientType.BROWSER;
@@ -272,6 +274,7 @@ io.sockets.on(Event.CONNECTION, function (socket) {
 	});
 
 	socket.on(Event.CLIENT_TYPE, function(data) {
+		console.log(Event.CLIENT_TYPE + " event occured. " + data);
 		handleClientConnected(data, socket);
 	});
 });
