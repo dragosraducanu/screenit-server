@@ -54,25 +54,17 @@ function connectToServer() {
 		qrH = qrW;
 
 		str = 'http://api.qrserver.com/v1/create-qr-code/?size='+(qrW)+'x'+(qrH)+'&data='+(id);
-		console.log("data is " + id);
 		$('#ID').attr("src", str);
-		$('#appname').append(id);
 		$('#ID').load(function() {
-			$(this).center();
+			//$(this).center();
 		});
 		socket.emit('browserWindowSize', {width: documentW, height: documentH}); 
 		
-		
 	});
 	socket.on('imagePush', function(data) {
-		$('#ID').hide();
-		console.log(data);
-		
 		var imgP = data.img;
-		console.log("before: "+imgP);
 		imgP = imgP.replace('\\', '/')
 		addImg(imgP);
-		console.log("after: " + imgP);
 	});	
 	socket.on('goToSlideNum', function(data) {
 		console.log(data);
@@ -93,13 +85,24 @@ jQuery.fn.center = function () {
 function goToSlideNum(num){
 	$('#slideshow').carousel(num);
 }
+
+function fadeElements(){
+	$('#subTitle').fadeOut(1000);
+	$('#ID').fadeOut(700);
+	$('.BottomBar').fadeOut(1000);
+	$('.BottomBar2').fadeOut(1000);
+	$('#slideshow').fadeIn(1000);
+}
+
 function addImg(src) {
 	if(picturesCount == 0) {
-		$('#slideshow').show();
+		fadeElements();
 		$('#slideshow').css("top", $('#header').css("height"));
 		$('.carousel-inner').append('<div class="item active"><img src="'+src+'"/></div>');
 	}
-	else $('.carousel-inner').append('<div class="item"><img src="'+src+'"/></div>');
+	else {
+		$('.carousel-inner').append('<div class="item"><img src="'+src+'"/></div>');
+	}
 	picturesCount++;
 	return picturesCount - 1;
 }
@@ -110,18 +113,34 @@ function addImg(src) {
 <div class="HeaderBar" id="header">
 	<div class="AppName" id="appname">
 		<h1>ScreenIt</h1>
-		<h2>Show your photos and documents on any screen.</h2>
+		<h2 id="subTitle">Show your photos on any screen.</h2>
 	</div>
 </div>
+<div class="QrCode">
 <img id = "ID" alt="aaa"></img>
-<center><div id="slideshow" class="carousel slide">
-    <div class="carousel-inner">
-    </div><!-- .carousel-inner -->
-    <a class="carousel-control left" href="#slideshow" data-slide="prev">&lsaquo;</a>
-    <a class="carousel-control right" href="#slideshow" data-slide="next">&rsaquo;</a>
-</div><!-- .carousel -->
+</div>
 
+
+<center>
+	<div id="slideshow" class="carousel slide">
+		<div class="carousel-inner">
+		</div><!-- .carousel-inner -->
+		
+	</div><!-- .carousel -->
 </center>
+
+<div class="BottomBar">
+	<a href="#">
+	  <span class="glyphicon glyphicon-info-sign"></span> About
+	</a>
+	<a href="#">
+	  <span class="glyphicon glyphicon glyphicon-eye-open"></span> Privacy
+	</a>
+</div>
+
+<div class="BottomBar2">
+	Made in Romania<img style="padding-left: 3px;" width = "16px" src="imgs/ro_flag.png">
+</div>
 
 
 </body>

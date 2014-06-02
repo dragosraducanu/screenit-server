@@ -93,14 +93,17 @@ function handleServePage(request, response, filePath) {
 	var contentType = 'text/html';
 	switch (extname) {
 		case '.js':
-		contentType = 'text/javascript';
-		break;
+			contentType = 'text/javascript';
+			break;
 		case '.css':
-		contentType = 'text/css';
-		break;
+			contentType = 'text/css';
+			break;
 		case '.pdf':
-		contentType = 'application/pdf';
-		break;
+			contentType = 'application/pdf';
+			break;
+		case '.png':
+			contentType = 'image/png';
+			break;
 	}
 
 	fs.exists(filePath, function(exists) {
