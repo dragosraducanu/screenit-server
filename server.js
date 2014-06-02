@@ -188,34 +188,58 @@ function doDisconnect(socket){
 	}
 }
 
+
+function idNotFound(id) {
+	return (socketMap[id] == null || isUndefined(socketMap[id]));
+}
+
+//simple mapping from browserID to androidID.
+var sessionMap = {};
+//simple mapping from socket.id to socket.
+var socketMap = {};
 function pairClients(data, socket) {
-	if(findClientByID(ClientType.BROWSER, data.browserID) != 0)
-	{
-		if(findBrowserInSession(data.browserID) == 0){
-			if(socket.clientType == ClientType.ANDROID){ 
-				session[data.androidID] = data.browserID;
-				session[data.androidID].files = new Array();
-				console.log("Starting session with android ID: " + data.androidID + " and browser ID: " + data.browserID);
-				socket.emit(Event.SEND_BROWSER_SIZE, {width: findClientByID(ClientType.BROWSER, data.browserID).width, height: findClientByID(ClientType.BROWSER, data.browserID).height});
-			}
-		}
-		else socket.emit('Browser client ('+data.browserID+') already in session');
-	}
-	else {
+//this request has to be made by an android client
+	var browserID = data.browserID;
+	var androidID = data.androidID;
+
+	if(idNotFound(browserID)){
 		socket.emit(Event.BAD_BROWSER_ID);
+		//error. notify clients;
+		return;
 	}
+
+	//check if the browser is already in a session
+	if(sessionMap[browserID] != null || !isUndefined(sessionMap)){
+		//browser already in session. notify android client.
+	}
+
+	//clients are ready to be paired.
+	sessionMap[browserID] = androidID;
+	sessionMap[androidID] = browserID;
+
+	//prepare an empty Array for images
+	sessionMap[browserID].images = new Array();
+
+	//send browser size to android to optimze the images before uploading.
+	var browserW = socketMap[browserID].width;
+	var browserH = socketMap[browserID].height;
+	socket.emit(Event.SEND_BROWSER_SIZE, {width: browserW, height: browserH});
+	console.log("Starting session with android ID: " + androidID + " and browser ID: " + browserID);
 }
 
-function changeSlideInBrowser(data, socket){
-	var bID = session[socket.myid];
-	var socketBrowser = sockets[bID];
-	io.sockets.socket(socketBrowser).emit(Event.GO_TO_SLIDE, data);
+function changeSlideInBrowser(data, android_socket){
+	var browserId = sessionMap[android_socket.id];
+	var browserSocket = socketMap[browserId];
+	browserSocket.emit(Event.GO_TO_SLIDE, data);
+	
 }
 
-function pushImageToBrowser(data, socket) {
-	var bID = session[socket.myid];
-	var socketBrowser = sockets[bID];
-	io.sockets.socket(socketBrowser).emit(Event.IMAGE_PUSH, data);
+function pushImageToBrowser(data, android_socket) {
+
+	var browserId = sessionMap[android_socket.id];
+	console.log("trying to send image from " + android_socket.id + " to " + browserId);
+	var browserSocket = socketMap[browserId];
+	browserSocket.emit(Event.IMAGE_PUSH, data);
 }
 
 
@@ -225,23 +249,21 @@ function handleClientConnected(data, socket) {
 	if(data.type == ClientType.BROWSER) 
 	{
 		socket.clientType = ClientType.BROWSER;
-		socket.myid = generateRandomID();
-		sockets[socket.myid] = socket.id;
-		socket.emit(Event.ID_GENERATED, {id: socket.myid});
-
-		console.log(Event.ID_GENERATED);
+		console.log("browser_id = " + socket.id);
 	}
 	else if(data.type == ClientType.ANDROID)
 	{
 		socket.clientType = ClientType.ANDROID;
-		socket.myid = generateRandomID();
-		sockets[socket.myid] = socket.id;
-		console.log("New android client connected");
+		console.log("android_id = " + socket.id);
 	}
+
+	socketMap[socket.id] = socket;
 	
 }
 
-
+function sendIdToClient(socket){
+	socket.emit(Event.ID_GENERATED, {id: socket.id});
+}
 
 io.sockets.on(Event.CONNECTION, function (socket) {
 	
@@ -252,7 +274,7 @@ io.sockets.on(Event.CONNECTION, function (socket) {
 	socket.emit(Event.REQUEST_CLIENT_TYPE);
 
 	socket.on(Event.REQUEST_ID, function() {
-		socket.emit(Event.ID_GENERATED, {id: this.myid});
+		sendIdToClient(socket);
 	});
 
 	socket.on(Event.PAIR_CLIENTS, function(data){

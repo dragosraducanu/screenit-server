@@ -34,13 +34,16 @@ $(document).ready(function() {
 	$('#thankyou').hide();
 	picturesCount = 0;
 	
-	$('#slideshow').carousel();
+	$('#slideshow').carousel({
+		interval: 0
+	});
 	connectToServer();
 });
 function connectToServer() {
 	socket = io.connect('http://46.214.74.147');
 	socket.on('requestClientType', function() {
 		socket.emit('clientType', {type : 'browser'});
+		socket.emit('requestID');
 	});
 	
 	socket.on('idGeneratedEvent', function (data) {
@@ -59,9 +62,11 @@ function connectToServer() {
 		});
 		socket.emit('browserWindowSize', {width: documentW, height: documentH}); 
 		
+		
 	});
 	socket.on('imagePush', function(data) {
 		$('#ID').hide();
+		console.log(data);
 		
 		var imgP = data.img;
 		console.log("before: "+imgP);
@@ -70,6 +75,7 @@ function connectToServer() {
 		console.log("after: " + imgP);
 	});	
 	socket.on('goToSlideNum', function(data) {
+		console.log(data);
 		goToSlideNum(data.slideNum);
 	});
 	socket.on('deviceDisconnected', function() {
